@@ -1,0 +1,29 @@
+_pkgname=temporary-containers
+pkgname=librewolf-$_pkgname
+pkgver=1.9.2
+pkgrel=3
+pkgdesc='Open tabs, websites, and links in automatically managed disposable containers'
+arch=(any)
+url='https://github.com/stoically/temporary-containers'
+license=(MIT)
+groups=(librewolf-addons)
+makedepends=(npm)
+source=("https://github.com/stoically/temporary-containers/archive/v$pkgver/$_pkgname-v$pkgver.tar.gz")
+sha512sums=(d77536a2744f067794917eb46149bb2407217972ef14286ed127099c647cf08882e9fba3d65951338dd255d95a99e94690e9fcd5c3f2bdd424059ab20d275735)
+
+build() {
+  cd $_pkgname-$pkgver
+  npm ci
+  npm run build:webpack
+  npm run webext:build
+}
+
+check() {
+  cd $_pkgname-$pkgver
+  npm test
+}
+
+package() {
+  cd $_pkgname-$pkgver
+  install -Dm644 "web-ext-artifacts/temporary_containers-$pkgver.zip" "$pkgdir/usr/lib/librewolf/browser/extensions/{c607c8df-14a7-4f28-894f-29e8722976af}.xpi"
+}

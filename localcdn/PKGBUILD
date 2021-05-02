@@ -1,0 +1,28 @@
+pkgbase=localcdn
+pkgname=(librewolf-$pkgbase chromium-$pkgbase)
+pkgver=2.6.6
+pkgrel=2
+pkgdesc='A web browser extension that emulates Content Delivery Networks to improve your online privacy'
+arch=(any)
+url='https://www.localcdn.org'
+license=(MPL2)
+makedepends=(zip)
+source=("$pkgbase-$pkgver.tar.gz::https://codeberg.org/nobody/LocalCDN/archive/v$pkgver.tar.gz")
+sha512sums=(f4462104cb8ff26b4767547cb32c7dc8a72c388466ea4019aee62308116b94decfbe7f7503ced828477ea59556f8e81620adcf2372d71f24ca026e9303d6829b)
+
+build() {
+    cd "$pkgbase"
+    find . -maxdepth 1 \( -name '*.git*' -o -name 'screenshots' -o -name '*.txt' -o -name '*.md' -o -name '.*' \) -exec rm -rf '{}' \;
+    zip -r --wild-stop-dirs "../$pkgbase.xpi" ./*
+}
+
+package_librewolf-localcdn() {
+    groups=(librewolf-addons)
+    install -Dm644 "$pkgbase.xpi" "$pkgdir/usr/lib/librewolf/browser/extensions/{b86e4813-687a-43e6-ab65-0bde4ab75758}.xpi"
+}
+
+package_chromium-localcdn() {
+    groups=(chromium-addons)
+    install -dm755 "$pkgdir/usr/share/"
+    mv -T "$pkgbase" "$pkgdir/usr/share/chromium-extension-$pkgbase"
+}

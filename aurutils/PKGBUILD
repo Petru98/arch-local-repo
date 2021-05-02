@@ -1,0 +1,24 @@
+pkgname=aurutils
+pkgver=3.1.2
+pkgrel=2
+pkgdesc='helper tools for the arch user repository'
+url='https://github.com/AladW/aurutils'
+arch=('any')
+license=('custom:ISC')
+source=("$url/releases/download/$pkgver/$pkgname-$pkgver.tar.gz")
+depends=('git' 'jq' 'pacutils' 'curl')
+optdepends=('bash-completion: bash completion'
+            'zsh: zsh completion'
+            'devtools: aur-chroot'
+            'vifm: default pager')
+sha512sums=('82c83c9a38262b2d267ca7b81de02041d3575b14beb895a272c1c1767add467466620e839cdbcf6db5c51fd93c33bf95587cfdc4288d9d31068c6e319b0da35d')
+
+build() {
+    cd "$pkgname-$pkgver"
+    make
+}
+
+package() {
+    cd "$pkgname-$pkgver"
+    make DESTDIR="$pkgdir" install
+}

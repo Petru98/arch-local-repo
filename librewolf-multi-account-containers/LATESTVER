@@ -1,0 +1,3 @@
+#!/bin/sh
+. ../version.sh
+github_tags 'mozilla/multi-account-containers'

@@ -1,0 +1,3 @@
+#!/bin/sh
+. ../version.sh
+gitlab_tags 'KevinRoebert/ClearUrls'

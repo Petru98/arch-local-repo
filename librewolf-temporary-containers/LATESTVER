@@ -1,0 +1,3 @@
+#!/bin/sh
+. ../version.sh
+github_tags 'stoically/temporary-containers' | verfilter beta

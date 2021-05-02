@@ -1,0 +1,3 @@
+#!/bin/sh
+. ../version.sh
+codeberg_releases 'nobody/LocalCDN' | verfilter beta

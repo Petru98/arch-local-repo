@@ -1,0 +1,41 @@
+_name=SponsorBlock
+pkgbase=sponsorblock
+pkgname=(librewolf-$pkgbase chromium-$pkgbase)
+pkgver=2.0.13.1
+pkgrel=1
+pkgdesc='Skip YouTube video sponsors'
+arch=(any)
+url='https://sponsor.ajay.app'
+license=(GPL3)
+makedepends=(npm zip)
+source=("https://github.com/ajayyy/$_name/archive/refs/tags/$pkgver.tar.gz")
+sha512sums=(57a30118cb8f45ac1fcfef88f7ae92412d84197327cb8cb97d99e4977253db30e4bed4c4f99fea74fb11591fa26a2fd826a594f2a33de120dc618840a3af0353)
+
+prepare() {
+    cd $_name-$pkgver
+    mv config.json.example config.json
+}
+
+build() {
+    cd $_name-$pkgver
+    npm install
+    npm run build:firefox
+    pushd dist
+    zip -r --wild-stop-dirs "../$pkgbase.xpi" ./*
+    popd
+    rm -r ./dist/*
+    npm run build
+}
+
+package_librewolf-sponsorblock() {
+    groups=(librewolf-addons)
+    cd $_name-$pkgver
+    install -Dm644 "$pkgbase.xpi" "$pkgdir/usr/lib/librewolf/browser/extensions/sponsorBlocker@ajay.app.xpi"
+}
+
+package_chromium-sponsorblock() {
+    groups=(chromium-addons)
+    cd $_name-$pkgver
+    install -dm755 "$pkgdir/usr/share/"
+    mv -T ./dist "$pkgdir/usr/share/chromium-extension-$pkgbase"
+}

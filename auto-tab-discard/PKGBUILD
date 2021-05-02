@@ -1,0 +1,34 @@
+pkgbase=auto-tab-discard
+pkgname=(librewolf-$pkgbase chromium-$pkgbase)
+pkgver=0.4.7
+pkgrel=1
+pkgdesc='Use native tab discarding method to automatically reduce memory usage of inactive tabs'
+arch=(any)
+url='https://add0n.com/tab-discard.html'
+license=(MPL2)
+makedepends=(zip)
+source=("$pkgbase-$pkgver.tar.gz::https://github.com/rNeomy/auto-tab-discard/archive/refs/tags/$pkgver.tar.gz")
+sha512sums=(5909572a9c52b738af1440b8c4cf71d0e6e0c16d9a46721d7fc1928517e17ca08d6b815cd3ac42fdde61fa224d139f064cf5085ad74f4f394107c288853377cb)
+
+prepare() {
+    cd "$pkgbase-$pkgver"
+    grep '"id":' manifest.json > /dev/null ||
+        sed -i -E 's/(\s*"name":.+)/\1\n"browser_specific_settings": {"gecko": {"id": "{c2c003ee-bd69-42a2-b0e9-6f34222cb046}"}},/' manifest.json
+}
+
+build() {
+    cd "$pkgbase-$pkgver"
+    find . -maxdepth 1 \( -name '*.md' -o -name 'LICENSE' \) -exec rm -rf '{}' \;
+    zip -r --wild-stop-dirs "../$pkgbase.xpi" ./*
+}
+
+package_librewolf-auto-tab-discard() {
+    groups=(librewolf-addons)
+    install -Dm644 "$pkgbase.xpi" "$pkgdir/usr/lib/librewolf/browser/extensions/{c2c003ee-bd69-42a2-b0e9-6f34222cb046}.xpi"
+}
+
+package_chromium-auto-tab-discard() {
+    groups=(chromium-addons)
+    install -dm755 "$pkgdir/usr/share/"
+    mv -T "$pkgbase-$pkgver" "$pkgdir/usr/share/chromium-extension-$pkgbase"
+}

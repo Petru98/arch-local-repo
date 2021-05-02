@@ -1,0 +1,35 @@
+_name=ClearUrls
+pkgbase=clearurls
+pkgname=(librewolf-$pkgbase chromium-$pkgbase)
+pkgver=1.21.0
+pkgrel=2
+pkgdesc='Will automatically remove tracking elements from URLs to help protect your privacy when browse through the Internet'
+arch=(any)
+url='https://clearurls.xyz'
+license=(LGPL3)
+makedepends=(zip)
+source=("$_name-$pkgver.tar.gz::https://gitlab.com/KevinRoebert/$_name/-/archive/$pkgver/$_name-$pkgver.tar.gz")
+sha512sums=(084c272d8e96446858ae25c518918c5c002e39e4b5be1b74197e0f470c71f5bb97ab02ed9db8ddfcd8a9bc3103291d925b272f85d25f45a5fedfd239cd85b6b5)
+
+prepare() {
+    cd "$_name-$pkgver"
+    grep '"id":' manifest.json > /dev/null ||
+        sed -i -E 's/(\s*"name":.+)/\1\n"browser_specific_settings": {"gecko": {"id": "{74145f27-f039-47ce-a470-a662b129930a}"}},/' manifest.json
+}
+
+build() {
+    cd "$_name-$pkgver"
+    find . -maxdepth 1 \( -name '*.git*' -o -name 'GitLabPages' -o -name 'build_tools' -o -name 'data' -o -name 'promotion' -o -name '*.md' -o -name 'LICENSE' \) -exec rm -rf '{}' \;
+    zip -r --wild-stop-dirs "../$pkgbase.xpi" ./*
+}
+
+package_librewolf-clearurls() {
+    groups=(librewolf-addons)
+    install -Dm644 "$pkgbase.xpi" "$pkgdir/usr/lib/librewolf/browser/extensions/{74145f27-f039-47ce-a470-a662b129930a}.xpi"
+}
+
+package_chromium-clearurls() {
+    groups=(chromium-addons)
+    install -dm755 "$pkgdir/usr/share/"
+    mv -T "$_name-$pkgver" "$pkgdir/usr/share/chromium-extension-$pkgbase"
+}

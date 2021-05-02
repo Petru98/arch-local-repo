@@ -1,0 +1,35 @@
+pkgbase=darkreader
+pkgname=(librewolf-$pkgbase chromium-$pkgbase)
+pkgver=4.9.32
+pkgrel=7
+pkgdesc='Inverts brightness of web pages and aims to reduce eyestrain while browsing the web'
+arch=(any)
+url='https://darkreader.org'
+license=(MIT)
+makedepends=(npm unzip)
+source=("https://github.com/darkreader/darkreader/archive/v$pkgver/$pkgbase-v$pkgver.tar.gz")
+sha512sums=(33c24574835c40f2a5dcc0a56b51e38bf30709a8a2c82e3200e6c2da33ac086c9c594e376d1f04390f8d3378dc0533938c553647af1e86e1135d8afba0763bed)
+
+build() {
+    cd $pkgbase-$pkgver
+    npm install
+    npm run build
+}
+
+check() {
+    cd $pkgbase-$pkgver
+    npm test
+}
+
+package_librewolf-darkreader() {
+    groups=(librewolf-addons)
+    cd $pkgbase-$pkgver
+    install -Dm644 "build-firefox.xpi" "$pkgdir/usr/lib/librewolf/browser/extensions/addon@darkreader.org.xpi"
+}
+
+package_chromium-darkreader() {
+    groups=(chromium-addons)
+    cd $pkgbase-$pkgver
+    install -dm755 "$pkgdir/usr/share/chromium-extension-$pkgbase"
+    unzip "build.zip" -d "$pkgdir/usr/share/chromium-extension-$pkgbase"
+}
