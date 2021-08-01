@@ -1,0 +1,3 @@
+print_title "Firejail - https://wiki.archlinux.org/index.php/Firejail"
+print_info "Installing firejail."
+package_install firetools

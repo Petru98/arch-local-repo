@@ -1,0 +1,143 @@
+#!/bin/bash
+
+SCRIPTDIR=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
+if ! [[ -f "$SCRIPTDIR/arch-setup-shared" ]]; then
+    echo "error: $SCRIPTDIR/arch-setup-shared not found" >&2
+    exit 1
+fi
+. "$SCRIPTDIR/arch-setup-shared"
+
+
+
+add_user_to_group() {
+    [[ "$2" == "" ]] && critical_error "add_user_to_group: group must not be empty"
+    if [[ "$1" != "" ]]; then
+        print_info "Adding user $1 to group $2."
+        groupadd -f $2
+        gpasswd -a $1 $2
+    fi
+}
+add_line() {
+    if ! grep -i "$1" "$2" >/dev/null 2>&1 ; then
+        echo "$1" >> "$2"
+    fi
+}
+
+package_install() {
+    pacman -S --needed --noconfirm "$@"
+}
+package_remove() {
+    for x in $*; do
+        if is_package_installed "$x" ; then
+            pacman -Rsncq --noconfirm $x
+        fi
+    done
+}
+aur_package_install() {
+    [ -n "$AUR_HELPER" ]
+    for x in "$@"; do
+        if ! is_package_installed "$x" ; then
+            su -l $USERNAME -c "$AUR_HELPER -S --noconfirm $x"
+        fi
+    done
+}
+aur_build_packages() {
+    PKG_DIR=/tmp/makepkg
+    [[ ! -d $PKG_DIR ]] && install -m777 -d $PKG_DIR
+    for x in $*; do
+        su -l $USERNAME -c "
+            cd $PKG_DIR
+            curl -o $x.tar.gz https://aur.archlinux.org/cgit/aur.git/snapshot/$x.tar.gz
+            tar zxvf $x.tar.gz
+            rm $x.tar.gz
+            cd $x
+            makepkg -csi --noconfirm
+        "
+    done
+}
+# makepkg_build_packages() {
+#     PKG_DIR=/tmp/makepkg
+#     [[ ! -d $PKG_DIR ]] && install -m777 -d $PKG_DIR
+#     for x in $*; do
+#         su -l $USERNAME -c "
+#             cp -rf \"$SCRIPTDIR/packages/$x\" $PKG_DIR
+#             cd $PKG_DIR/$x
+#             makepkg -csi --noconfirm
+#         "
+#     done
+# }
+
+configure_xinitrc() {
+    sed -i "s/^exec .*/exec $*/" /etc/X11/xinit/xinitrc
+}
+
+
+
+print_info "Copying configuration files"
+cp -fr -t "/" $(ls -1 "$SCRIPTDIR/root" | sed '/^home$/d')
+
+
+. "$SCRIPTDIR/postinstall/check-language"
+. "$SCRIPTDIR/postinstall/configure-pacman"
+. "$SCRIPTDIR/postinstall/install-sudo"
+. "$SCRIPTDIR/postinstall/configure-user"
+
+echo "$USERNAME  ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/tmp
+trap 'rm -f /etc/sudoers.d/tmp' EXIT
+
+. "$SCRIPTDIR/postinstall/install-yay"
+
+
+. "$SCRIPTDIR/postinstall/install-microcode"
+. "$SCRIPTDIR/postinstall/install-video-driver"
+. "$SCRIPTDIR/postinstall/install-xorg"
+. "$SCRIPTDIR/postinstall/install-alsa"
+. "$SCRIPTDIR/postinstall/install-pulseaudio"
+. "$SCRIPTDIR/postinstall/install-fonts"
+. "$SCRIPTDIR/postinstall/install-cups"
+
+. "$SCRIPTDIR/postinstall/install-desktop-environment"
+. "$SCRIPTDIR/postinstall/install-networkmanager"
+. "$SCRIPTDIR/postinstall/install-bluetooth"
+
+. "$SCRIPTDIR/postinstall/install-rtl8812au"
+. "$SCRIPTDIR/postinstall/install-epson-imagescan"
+
+. "$SCRIPTDIR/postinstall/install-firewall"
+. "$SCRIPTDIR/postinstall/install-wine"
+. "$SCRIPTDIR/postinstall/install-virt-manager"
+. "$SCRIPTDIR/postinstall/install-docker"
+# . "$SCRIPTDIR/postinstall/install-virtualbox"
+# . "$SCRIPTDIR/postinstall/install-snapper"
+# . "$SCRIPTDIR/postinstall/install-snap-pac"
+
+
+# devel
+package_install \
+    git jdk11-openjdk cmake ninja mono npm \
+    python code python-pylint flake8 \
+    valgrind $(bool $KDE && echo -n kcachegrind || echo -n qcachegrind) \
+    # radare2-cutter
+package_install --asdeps tk
+
+# misc
+package_install \
+    gocryptfs ffmpeg obs-studio firefox \
+    keepassxc libreoffice-fresh pacmanlogviewer psensor \
+    steam discord gameconqueror \
+    torbrowser-launcher firetools # gimp # firefox-ublock-origin firefox-dark-reader firefox-decentraleyes firefox-extension-https-everywhere firefox-extension-privacybadger firefox-noscript firefox-umatrix
+package_install --asdeps wl-clipboard xclip torsocks
+
+# aur
+aur_package_install zsh-syntax-highlighting-git wipefreespace youtube-dl-gui-git # woeusb
+package_install --asdeps youtube-dl python-pycryptodome
+
+
+
+print_info "Configuring dconf."
+dconf update
+
+print_info "Cleaning orphan packages."
+pacman -Rsnc --noconfirm $(pacman -Qqdt)
+
+print_info "Installation complete. Please reboot."

@@ -1,0 +1,2 @@
+print_info "Installing filesystem tools."
+package_install parted btrfs-progs f2fs-tools gptfdisk ntfs-3g dosfstools exfat-utils autofs mtpfs cdrtools

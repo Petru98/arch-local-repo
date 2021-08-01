@@ -1,6 +1,6 @@
 pkgbase=ublock-origin
 pkgname=(librewolf-$pkgbase chromium-$pkgbase)
-pkgver=1.35.2
+pkgver=1.37.2
 pkgrel=1
 pkgdesc='Efficient blocker add-on for various browsers. Fast, potent, and lean'
 arch=(any)
@@ -12,8 +12,8 @@ source=(
     "https://github.com/gorhill/uBlock/releases/download/$pkgver/uBlock0_$pkgver.chromium.zip"
 )
 sha512sums=(
-    f0f78f8f1e2f04e3ef0673aea72d7dc9aca008e660220b6533b17af089d3ec7fe22cf022fb91eef3f91298c52edef254874d173045c5584c8247b36c761d1679
-    184f7e7c54623528b77a01bd078616b776f83696aa2fe83ec2409f95680fa7f177169d7ea1611912a16d48020618c44bc9ef0312962f09c2bb8a0ddf6a330818
+    ed702004e7eaa882364d6f0bc65e944525261dcdbd2c12a462c21a759c08db30bc76dac1d361be07b97d341b8a1e3d0fce86b9bc3de8edcf76e4680946fde15f
+    37888d888e3e5f887a09979f1561c9e074f971a1a7d59d038ec0214d44b1ddf3f7bcf5b2bbc92dd2e154572065319c61a8e4df2adf8002c6c0c01fa73a4ef0d5
 )
 noextract=("uBlock0_$pkgver.firefox.xpi" "uBlock0_$pkgver.chromium.zip")
 

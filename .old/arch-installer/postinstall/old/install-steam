@@ -1,0 +1,3 @@
+print_title "Steam - https://wiki.archlinux.org/index.php/Steam"
+print_info "Installing steam."
+package_install steam

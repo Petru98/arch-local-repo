@@ -1,0 +1,3 @@
+print_title "Gocryptfs - https://wiki.archlinux.org/index.php/Gocryptfs"
+print_info "Installing gocryptfs."
+package_install gocryptfs

@@ -1,0 +1,34 @@
+configure_mirrorlist() {
+    print_title "Mirror list - https://wiki.archlinux.org/index.php/Mirrors"
+    print_info "Updating mirror list."
+
+    local tmpfile=$(mktemp --suffix=-mirrorlist)
+    curl -so $tmpfile $MIRRORLIST_URL
+
+    if [[ -s $tmpfile ]]; then
+        print_info "Rotating the new list into place."
+        sed -i 's/^#//g' $tmpfile
+        mv -f $tmpfile /etc/pacman.d/mirrorlist
+    else
+        print_error "Could not download mirror list."
+    fi
+
+    if bool $MIRRORLIST_AUTOMATIC_SORT ; then
+        print_info "Ranking mirrors."
+        pacman -Sy --noconfirm pacman-contrib
+        cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.tmp
+        rankmirrors /etc/pacman.d/mirrorlist.tmp | sed -e '/^#/d' > /etc/pacman.d/mirrorlist
+        rm /etc/pacman.d/mirrorlist.tmp
+    fi
+
+    # Allow global read access (required for non-root yaourt execution)
+    print_info "Setting global read access for mirror list."
+    chmod +r /etc/pacman.d/mirrorlist
+
+    if bool $MIRRORLIST_MANUAL_SORT ; then
+        print_info "Please sort the mirror list."
+        run_editor /etc/pacman.d/mirrorlist
+    fi
+}
+
+configure_mirrorlist

@@ -1,0 +1,3 @@
+print_title "Node.js - https://wiki.archlinux.org/index.php/Node.js"
+print_info "Installing nodejs and npm."
+package_install npm

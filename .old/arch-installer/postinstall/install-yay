@@ -1,0 +1,4 @@
+print_info "Installing yay."
+package_install --asdeps go
+aur_build_packages yay
+AUR_HELPER=yay

@@ -1,0 +1,7 @@
+print_title "Partitioning - https://wiki.archlinux.org/index.php/Partitioning"
+print_info "Please partition the disk(s). Partitioners: parted, cgdisk, cfdisk, gdisk, fdisk etc."
+print_info "Make sure that the partition table is $(bool $UEFI && echo -n 'GPT and that you have an EFI partition' || echo -n 'MBR and that you set the boot flag')."
+pause
+modprobe dm-mod
+vgscan &> /dev/null
+vgchange -ay &> /dev/null

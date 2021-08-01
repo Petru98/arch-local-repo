@@ -1,0 +1,3 @@
+print_title "Python - https://wiki.archlinux.org/index.php/Python"
+package_install python python-pylint flake8
+package_install --asdeps tk

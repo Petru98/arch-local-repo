@@ -1,0 +1,10 @@
+print_info "Configuring date & time."
+timedatectl set-ntp true
+arch_chroot "hwclock --systohc --utc";
+arch_chroot "ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime"
+arch_chroot "systemctl enable systemd-timesyncd.service"
+if [[ "$FALLBACK_NTP" != "" ]]; then
+    print_info "Configuring fallback NTP."
+    arch_chroot "sed -i '/#NTP=/d; s/#Fallback//' /etc/systemd/timesyncd.conf"
+    arch_chroot "echo \"FallbackNTP=$FALLBACK_NTP\" >> /etc/systemd/timesyncd.conf"
+fi

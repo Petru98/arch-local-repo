@@ -1,0 +1,3 @@
+print_title "OpenSSH - https://wiki.archlinux.org/index.php/OpenSSH"
+print_info "Installing openssh."
+package_install openssh

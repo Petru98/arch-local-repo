@@ -1,14 +1,14 @@
 pkgbase=darkreader
 pkgname=(librewolf-$pkgbase chromium-$pkgbase)
-pkgver=4.9.32
-pkgrel=7
+pkgver=4.9.34
+pkgrel=1
 pkgdesc='Inverts brightness of web pages and aims to reduce eyestrain while browsing the web'
 arch=(any)
 url='https://darkreader.org'
 license=(MIT)
 makedepends=(npm unzip)
-source=("https://github.com/darkreader/darkreader/archive/v$pkgver/$pkgbase-v$pkgver.tar.gz")
-sha512sums=(33c24574835c40f2a5dcc0a56b51e38bf30709a8a2c82e3200e6c2da33ac086c9c594e376d1f04390f8d3378dc0533938c553647af1e86e1135d8afba0763bed)
+source=("https://github.com/darkreader/darkreader/archive/refs/tags/v$pkgver.tar.gz")
+sha512sums=(692ac9ab7992a7b78bf35499946b1e0cf5e31c9d396dade52a1f967489a5b15dd92ad7d99154e90e7114a10113c4d06e459010d69b064bb477a04e15098918cf)
 
 build() {
     cd $pkgbase-$pkgver

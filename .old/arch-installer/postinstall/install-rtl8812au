@@ -1,0 +1,3 @@
+print_title "rtl8812au - https://wiki.archlinux.org/index.php/Wireless_network_configuration#rtl88xxau"
+print_info "Installing rtl8812au."
+aur_package_install rtl8812au-dkms-git

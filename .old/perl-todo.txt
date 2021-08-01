@@ -1,0 +1,3 @@
+perl-future
+perl-io-async
+perl-struct-dumb

@@ -1,0 +1,6 @@
+Defaults lecture=never
+Defaults passprompt="[sudo] password for %p: "
+Defaults !requiretty, !tty_tickets, visiblepw
+Defaults passwd_timeout=0
+#Defaults targetpw
+%wheel ALL=(ALL) ALL

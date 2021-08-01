@@ -1,0 +1,3 @@
+print_title "GameConqueror"
+print_info "Installing gameconqueror."
+package_install gameconqueror

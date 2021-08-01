@@ -396,7 +396,7 @@ def build(args):
                         cwd=f'{rootdir}/{pkgbase}', stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE
                     )
 
-                    # remove leftover files
+                    # remove leftover files in background
                     tasks.append(asyncio.create_task(run_async(['rm', '-rf', f'{env["BUILDDIR"]}/{pkgbase}'])))
 
                     if returncode != 0:
@@ -445,7 +445,7 @@ def build(args):
                     del pkgs[pkgname]
 
     # Build
-    for info in makedepsort(pkgs):
+    for info in makedepsort(pkgs):  # TODO allow .makepkg.conf specific for each package (export an env var with the path for the default makepkg.conf in order to be sourced, maybe in ./aur bash script). also add runmakepkg[_async] function and a script which takes care of the makepkg.conf
         os.chdir(f'{rootdir}/{info["pkgbase"]}')
         returncode, _, _ = run(['makepkg', '-src'])
         if returncode != 0:
@@ -478,7 +478,10 @@ def outofdate(args):
         else:
             async with semaphore:
                 returncode, stdout, _ = await run_async([latestver_path], cwd=pkgdir, stdout=asyncio.subprocess.PIPE)
-                if returncode == 0:
+                if returncode != 0:
+                    logger.error(f'{latestver_path} failed with exit code {returncode}.')
+
+                else:
                     srcinfo = Srcinfo.parsestr(await readsrcinfo_async(pkgbase, cache=True))
                     version = f'{srcinfo["pkgver"]}-{srcinfo["pkgrel"]}'
                     indentation = ' ' * len(pkgbase)
@@ -495,6 +498,23 @@ def outofdate(args):
 
 
 
+# TODO
+def clean(args):
+    args.pkgs = iterpkgs(args.pkgs, devel=True)
+    semaphore = asyncio.Semaphore(os.cpu_count())
+
+    # TODO remove packages that are not in the database
+    # TODO remove items from SRCDEST except for directories with .git (maybe also use srcinfos)
+    async def clean_async():
+        with os.scandir(env['SRCDEST']) as entries:
+            for entry in entries:
+                pass
+        # returncode, stdout, stderr = await run_async(['rm', '-rf', f'{env["SRCDEST"]}/{pkgbase}'])
+
+    return asyncio.run(waitall(clean_async))
+
+
+
 def fix(args):
     pkgs = bool(args.pkgs)
     args.pkgs = iterpkgs(args.pkgs, devel=True)
@@ -504,11 +524,13 @@ def fix(args):
 
     semaphore = asyncio.Semaphore(os.cpu_count())
 
+    # TODO check packages all the packages in the database for existence
+
     async def fixchecksums(srcinfo):
         async def getchecksum(algo, source, hashval):
             filename, protocol, url = Srcinfo.splitsource(source)
             async with semaphore:
-                catcmd = f'curl -Ls \'{url.replace(chr(39), "%27")}\'' if protocol != 'local' else f'cat "{url}"'
+                catcmd = f'curl -Ls \'{url.replace(chr(39), "%27")}\'' if protocol != 'local' else f'cat "{rootdir}/{srcinfo["pkgbase"]}/{url}"'
                 returncode, stdout, stderr = await run_async(f'{catcmd} | {algo}sum -b',
                     shell=True, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
                 )
@@ -525,6 +547,7 @@ def fix(args):
         oldchecksums = []
         coros = []
 
+        # Find all checksums for sources
         for suffix in Srcinfo.archsuffixes(srcinfo):
             sources = 'source' + suffix
             if sources in srcinfo:
@@ -540,6 +563,7 @@ def fix(args):
                                 oldchecksums.append(checksum)
                                 coros.append(getchecksum(algo, source, hashval))
 
+        # Find and replace checksum mismatches
         if not hashvalues:
             return
         del hashvalues
@@ -587,6 +611,8 @@ def main(args=sys.argv[1:]):
     fixcmd = subparsers.add_parser('fix', help='Fix packages (e.g. update .SRCINFO files).')
     fixcmd.add_argument('pkgs', metavar='PKGS', nargs='*', help='Packages to fix.')
     fixcmd.set_defaults(func=fix)
+
+    # TODO cleancmd
 
     args = argparser.parse_args(args)
 

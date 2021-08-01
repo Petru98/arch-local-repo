@@ -1,0 +1,6 @@
+print_info "Configuring locale."
+echo "LANG=\"${LOCALES[0]}.UTF-8\"" > $ROOT_MOUNTPOINT/etc/locale.conf
+for x in "${LOCALES[@]}" ; do
+    arch_chroot "sed -i 's/#\('$x'.UTF-8\)/\1/' /etc/locale.gen"
+done
+arch_chroot "locale-gen"

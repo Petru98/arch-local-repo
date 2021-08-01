@@ -1,0 +1,3 @@
+print_title "Wipefreespace"
+print_info "Installing wipefreespace."
+aur_package_install wipefreespace

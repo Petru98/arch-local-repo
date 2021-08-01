@@ -1,0 +1,3 @@
+print_title "pacmanlogviewer"
+print_info "Installing pacmanlogviewer."
+package_install pacmanlogviewer

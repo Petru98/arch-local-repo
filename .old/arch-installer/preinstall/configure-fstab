@@ -1,0 +1,5 @@
+print_info "Configuring fstab."
+genfstab -U $ROOT_MOUNTPOINT >> $ROOT_MOUNTPOINT/etc/fstab
+if bool $FSTAB_MANUAL_EDIT ; then
+    run_editor $ROOT_MOUNTPOINT/etc/fstab
+fi

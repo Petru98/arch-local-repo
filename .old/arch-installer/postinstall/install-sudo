@@ -1,0 +1,5 @@
+print_title "Sudo - https://wiki.archlinux.org/index.php/Sudo"
+print_info "Installing sudo."
+package_install sudo
+groupadd sudo
+visudo -cq -f /etc/sudoers || critical_error "/etc/sudoers contains errors. Please fix the errors in the file."

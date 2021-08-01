@@ -1,0 +1,3 @@
+print_info "Configuring keymap"
+echo "KEYMAP=${KEYMAPS[0]}" > $ROOT_MOUNTPOINT/etc/vconsole.conf
+localectl set-x11-keymap ${KEYMAPS[0]}

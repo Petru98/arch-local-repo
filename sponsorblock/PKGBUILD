@@ -1,7 +1,7 @@
 _name=SponsorBlock
 pkgbase=sponsorblock
 pkgname=(librewolf-$pkgbase chromium-$pkgbase)
-pkgver=2.0.13.1
+pkgver=2.1.4
 pkgrel=1
 pkgdesc='Skip YouTube video sponsors'
 arch=(any)
@@ -9,7 +9,7 @@ url='https://sponsor.ajay.app'
 license=(GPL3)
 makedepends=(npm zip)
 source=("https://github.com/ajayyy/$_name/archive/refs/tags/$pkgver.tar.gz")
-sha512sums=(57a30118cb8f45ac1fcfef88f7ae92412d84197327cb8cb97d99e4977253db30e4bed4c4f99fea74fb11591fa26a2fd826a594f2a33de120dc618840a3af0353)
+sha512sums=(7670e8a78f6a4a0a4896e38a115bdd2fdf2aa2f5d8c6fe113ba6a3a3ec7b4ae11c280492e3ce53af4150342207bddf85e4249f3d2bcbca188b9057ffff951440)
 
 prepare() {
     cd $_name-$pkgver

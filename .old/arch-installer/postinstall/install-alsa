@@ -1,0 +1,2 @@
+print_title "Alsa - https://wiki.archlinux.org/index.php/Alsa"
+package_install alsa-utils alsa-plugins lib32-alsa-plugins

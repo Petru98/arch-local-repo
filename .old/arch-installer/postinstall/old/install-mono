@@ -1,0 +1,3 @@
+print_title "Mono - https://wiki.archlinux.org/index.php/Mono"
+print_info "Installing mono."
+package_install mono

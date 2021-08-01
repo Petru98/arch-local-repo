@@ -1,0 +1,5 @@
+print_info "mkinitcpio"
+bool $LUKS && sed -i '/^HOOK/s/block/block keymap encrypt/' $ROOT_MOUNTPOINT/etc/mkinitcpio.conf
+bool $LVM && sed -i '/^HOOK/s/filesystems/lvm2 filesystems/' $ROOT_MOUNTPOINT/etc/mkinitcpio.conf
+bool MKINITCPIO_MANUAL_EDIT && run_editor $ROOT_MOUNTPOINT/etc/mkinitcpio.conf
+arch_chroot "mkinitcpio -p $LINUX_VERSION"

@@ -1,0 +1,3 @@
+print_title "Gparted - https://wiki.archlinux.org/index.php/Parted"
+print_info "Installing gparted."
+package_install gparted

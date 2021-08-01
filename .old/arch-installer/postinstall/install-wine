@@ -1,0 +1,6 @@
+print_title "Wine - https://wiki.archlinux.org/index.php/Wine"
+print_info "Installing wine and setup_dxvk."
+package_install wine-staging wine-nine winetricks
+package_install --asdeps dosbox vkd3d lib32-vkd3d openal lib32-openal lib32-mpg123
+aur_package_install dxvk-bin wine-mono-bin wine-gecko-bin
+print_warning "You will have to run 'setup_dxvk install --with-d3d10 --symlink' to install dxvk in WINEPREFIX."

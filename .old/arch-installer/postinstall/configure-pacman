@@ -1,0 +1,27 @@
+check_multilib() {
+    if [[ "$ARCHI" == "x86_64" ]]; then
+        local has_multilib=$(grep -n "\[multilib\]" /etc/pacman.conf | cut -f1 -d:)
+        if [[ "$has_multilib" == "" ]]; then
+            echo -e "\n[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
+        else
+            sed -i "${has_multilib}s/^#//" /etc/pacman.conf
+            local has_multilib=$(( $has_multilib + 1 ))
+            sed -i "${has_multilib}s/^#//" /etc/pacman.conf
+        fi
+        print_info 'Multilib repository added to /etc/pacman.conf file.'
+    fi
+}
+check_multilib
+
+if [[ ! -d /etc/pacman.d/gnupg ]]; then
+    package_install haveged
+    haveged -w 1024
+    pacman-key --init
+    pacman-key --populate archlinux
+    pkill haveged
+    package_remove haveged
+fi
+pacman -Sy
+
+package_install pacman-contrib namcap
+systemctl enable paccache.timer

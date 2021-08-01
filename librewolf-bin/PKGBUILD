@@ -1,7 +1,7 @@
 _pkgname=librewolf
-_pkgrel=1
+_pkgrel=2
 pkgname=$_pkgname-bin
-pkgver=88.0
+pkgver=88.0.1
 pkgrel=2
 pkgdesc="Community-maintained fork of Firefox, focused on privacy, security and freedom."
 arch=(x86_64)
@@ -24,11 +24,11 @@ validpgpkeys=(031F7104E932F7BD7416E7F6D2845E1305D6E801)
 options=(!emptydirs)
 
 source=(
-    "https://gitlab.com/$_pkgname-community/browser/arch/-/jobs/1193560928/artifacts/raw/$_pkgname-$pkgver-$_pkgrel-x86_64.pkg.tar.zst"
-    "https://gitlab.com/$_pkgname-community/browser/arch/uploads/4358e34799f8470381fd8d4bfb3b7080/$_pkgname-$pkgver-$_pkgrel-x86_64.pkg.tar.zst.sig"
+    "https://gitlab.com/$_pkgname-community/browser/arch/-/jobs/1262460657/artifacts/raw/$_pkgname-$pkgver-$_pkgrel-x86_64.pkg.tar.zst"
+    "https://gitlab.com/$_pkgname-community/browser/arch/uploads/408789ac38996292279f47844c480659/$_pkgname-$pkgver-$_pkgrel-x86_64.pkg.tar.zst.sig"
 )
 sha512sums=(
-    fd273dca474943fe227c567ca1df2acc611d3a9363839d63521ca02745c099474c08de732baad5c6da2b190d36e66227eea980a6c27325dc8028db8ed66624d5
+    b90ce83174e92cdac66df4f5555c5e7e9398fa554b42f7caaa0a3b51245d99549e49fba8d0998e7fc3d59d289b1f91e5f56e4d548aff5274861608d2395c6b8c
     SKIP
 )
 

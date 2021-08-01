@@ -1,0 +1,3 @@
+print_title "WoeUSB"
+print_info "Installing woeusb."
+aur_package_install woeusb

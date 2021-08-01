@@ -1,0 +1,3 @@
+print_title "VLC - https://wiki.archlinux.org/index.php/VLC_media_player"
+print_info "Installing vlc."
+package_install vlc

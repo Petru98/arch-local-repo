@@ -1,0 +1,10 @@
+#!/bin/bash
+if [ "$#" -ne 1 ]; then
+    echo "error: $0 must be called with exactly one argument" >&2
+    exit 1
+fi
+
+set -a
+. "$1"
+set +a
+env -u _ -u PWD -u SHLVL jq --slurp -R 'env' < /dev/null

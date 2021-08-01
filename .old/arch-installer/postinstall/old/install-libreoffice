@@ -1,0 +1,3 @@
+print_title "LibreOffice - https://wiki.archlinux.org/index.php/LibreOffice"
+print_info "Installing libreoffice-fresh."
+package_install libreoffice-fresh

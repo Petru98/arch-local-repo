@@ -1,0 +1,15 @@
+pkgname=doas-sudo
+pkgver=1
+pkgrel=1
+pkgdesc='A symlink for using doas as a drop-in replacement to sudo'
+arch=(any)
+url="https://github.com/slicer69/doas"
+license=(MIT)
+depends=(doas)
+provides=(sudo)
+conflicts=(sudo)
+
+package() {
+  install -m755 -d "$pkgdir"/usr/bin
+  ln -s /usr/bin/doas "$pkgdir"/usr/bin/sudo
+}

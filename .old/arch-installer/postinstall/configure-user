@@ -1,0 +1,12 @@
+print_title "User - https://wiki.archlinux.org/index.php/Users_and_groups"
+
+while [[ "$USERNAME" != "" ]]; do prompt "Username: " USERNAME ; done
+useradd -m -g users -G sudo -s /bin/zsh $USERNAME
+while ! passwd $USERNAME ; do : ; done
+
+cp -fr -t /home/$USERNAME/ $HOME/.zshrc $([[ -f $HOME/.curlrc ]] && echo -n $HOME/.curlrc)
+ln -s "/usr/share/pacman/PKGBUILD.proto" "/home/$USERNAME/Templates/PKGBUILD"
+ln -s "/usr/share/pacman/PKGBUILD-vcs.proto" "/home/$USERNAME/Templates/PKGBUILD-vcs"
+ln -s "/usr/share/pacman/PKGBUILD-split.proto" "/home/$USERNAME/Templates/PKGBUILD-split"
+ln -s "/usr/share/pacman/proto.install" "/home/$USERNAME/Templates/PKGBUILD.install.install"
+chown -R $USERNAME:users /home/$USERNAME

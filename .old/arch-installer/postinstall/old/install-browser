@@ -1,0 +1,2 @@
+print_title "Web Browser - https://wiki.archlinux.org/index.php/Web_browser"
+package_install firefox firefox-ublock-origin firefox-dark-reader firefox-decentraleyes firefox-extension-https-everywhere firefox-extension-privacybadger firefox-noscript firefox-umatrix

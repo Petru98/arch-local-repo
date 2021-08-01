@@ -1,0 +1,3 @@
+print_title "FFmpeg - https://wiki.archlinux.org/index.php/FFmpeg"
+print_info "Installing ffmpeg."
+package_install ffmpeg

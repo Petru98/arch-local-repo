@@ -1,0 +1,93 @@
+install_bootloader() {
+    print_info "Installing bootloader $BOOTLOADER"
+    bool $UEFI && arch_pacstrap efibootmgr dosfstools
+
+    local ROOT_PART=$(echo -n $ROOT_PARTITION | sed -E 's:.+/(.+)$:\1:')
+    case "$BOOTLOADER" in
+        Grub2)
+            arch_pacstrap grub os-prober
+            if bool $BOOTLOADER_AUTOMATIC_INSTALL ; then
+                if bool $LUKS ; then
+                    sed -i -e 's/GRUB_CMDLINE_LINUX="\(.\+\)"/GRUB_CMDLINE_LINUX="\1 cryptdevice='"$LUKS_DISK"':crypt"/g' -e 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="cryptdevice=\/dev\/'"$LUKS_DISK"':crypt"/g' $ROOT_MOUNTPOINT/etc/default/grub
+                fi
+                if bool $UEFI ; then
+                    arch_chroot "grub-install --target=x86_64-efi --efi-directory=$EFI_MOUNTPOINT --bootloader-id=arch_grub --recheck"
+                else
+                    arch_chroot "grub-install --target=i386-pc --recheck --debug $BOOT_DISK"
+                fi
+            else
+                print_info "Manual install mode activated"
+                arch_chroot
+            fi
+            arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
+            ;;
+
+        Syslinux)
+            arch_pacstrap syslinux gptfdisk
+            if bool $BOOTLOADER_AUTOMATIC_INSTALL ; then
+                arch_chroot "syslinux-install_update -i$(! bool $UEFI && echo -n 'am')"
+                if bool $LUKS ; then
+                    sed -i "s/APPEND root=.*/APPEND root=\/dev\/mapper\/$ROOT_PART cryptdevice=$LUKS_DISK:crypt ro/g" ${ROOT_MOUNTPOINT}${EFI_MOUNTPOINT}/syslinux/syslinux.cfg
+                elif bool $LVM ; then
+                    sed -i "s/sda[0-9]/\/dev\/mapper\/$ROOT_PART/g" ${ROOT_MOUNTPOINT}${EFI_MOUNTPOINT}/syslinux/syslinux.cfg
+                else
+                    sed -i "s/sda[0-9]/$ROOT_PART/g" ${ROOT_MOUNTPOINT}${EFI_MOUNTPOINT}/syslinux/syslinux.cfg
+                fi
+                print_warning "The partition in question needs to be whatever you have as / (root), not /boot."
+                pause
+                run_editor ${ROOT_MOUNTPOINT}${EFI_MOUNTPOINT}/syslinux/syslinux.cfg
+            else
+                print_info "Your boot partition, on which you plan to install Syslinux, must contain a FAT, ext2, ext3, ext4, or Btrfs file system. You should install it on a mounted directory, not a /dev/sdXY partition. You do not have to install it on the root directory of a file system, e.g., with partition /dev/sda1 mounted on /boot you can install Syslinux in the syslinux directory"
+                print_warning "You have to manually enter the following commands, then press ${Bold}CTRL+D${Reset} or type ${Bold}exit${Reset}"
+                log "mkdir /boot/syslinux"
+                log "extlinux --install /boot/syslinux"
+                arch_chroot
+            fi
+            ;;
+
+        Systemd)
+            print_warning "Systemd-boot heavily suggests that /boot is mounted to the EFI partition, not /boot/efi, in order to simplify updating and configuration."
+            if bool $BOOTLOADER_AUTOMATIC_INSTALL ; then
+                arch_chroot "bootctl --path=$EFI_MOUNTPOINT install"
+                print_warning "Please check your .conf file"
+                partuuid=$(blkid -s PARTUUID $ROOT_MOUNTPOINT | awk '{print $2}' | sed 's/"//g' | sed 's/^.*=//')
+                if bool $LUKS ; then
+                    echo -e "title\tArch Linux\nlinux\t/vmlinuz-$LINUX_VERSION\ninitrd\t/initramfs-$LINUX_VERSION.img\noptions\tcryptdevice=$LUKS_DISK:luks root=\/dev\/mapper\/$ROOT_PART rw" > ${ROOT_MOUNTPOINT}${EFI_MOUNTPOINT}/loader/entries/arch.conf
+                elif bool $LVM ; then
+                    echo -e "title\tArch Linux\nlinux\t/vmlinuz-$LINUX_VERSION\ninitrd\t/initramfs-$LINUX_VERSION.img\noptions\troot=\/dev\/mapper\/$ROOT_PART rw" > ${ROOT_MOUNTPOINT}${EFI_MOUNTPOINT}/loader/entries/arch.conf
+                else
+                    echo -e "title\tArch Linux\nlinux\t/vmlinuz-$LINUX_VERSION\ninitrd\t/initramfs-$LINUX_VERSION.img\noptions\troot=PARTUUID=$partuuid rw" > ${ROOT_MOUNTPOINT}${EFI_MOUNTPOINT}/loader/entries/arch.conf
+                fi
+                    echo -e "default  arch\ntimeout  5" > ${ROOT_MOUNTPOINT}${EFI_MOUNTPOINT}/loader/loader.conf
+                pause
+                run_editor ${ROOT_MOUNTPOINT}${EFI_MOUNTPOINT}/loader/entries/arch.conf
+                run_editor ${ROOT_MOUNTPOINT}${EFI_MOUNTPOINT}/loader/loader.conf
+            else
+                print_info "Manual install mode activated"
+                arch_chroot
+            fi
+            ;;
+
+        rEFInd)
+            arch_pacstrap refind-efi os-prober
+            if bool $BOOTLOADER_AUTOMATIC_INSTALL ; then
+                arch_chroot "refind-install"
+                print_warning "When refind-install (used in Automatic mode) is run in chroot (e.g. in live system when installing Arch Linux) /boot/refind-linux.conf is populated with kernel options from the live system not the one on which it is installed. You need to adjust kernel options in /boot/refind-linux.conf manually."
+                pause
+                run_editor ${ROOT_MOUNTPOINT}${EFI_MOUNTPOINT}/refind_linux.conf
+            else
+                print_info "Manual install mode activated"
+                arch_chroot
+            fi
+            ;;
+
+        "")
+            ;;
+
+        *)
+            critical_error "Unknown bootloader $BOOTLOADER"
+            ;;
+    esac
+}
+
+install_bootloader

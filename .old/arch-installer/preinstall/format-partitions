@@ -1,0 +1,85 @@
+format_partitions() {
+    print_title "Formating - https://wiki.archlinux.org/index.php/File_Systems"
+    print_warning "Please double check and make sure that the partitions are set propely! (switch to another tty)"
+    pause
+
+    local block_list=($(lsblk | grep 'part\|lvm' | awk '{print substr($1,3)}'))
+    device_path() {
+        if [[ "$(printf '%s\n' "${block_list[@]}" | grep $1 | grep lvm)" == "" ]]; then
+            echo -n "/dev/$1"
+        else
+            echo -n "/dev/mapper/$1"
+        fi
+    }
+    format_mount_partition() {
+        local partition="$1"
+        local mountpoint="$2"
+        local format="$3"
+        if [[ "$format" != "" ]]; then
+            mkfs.$format $partition \
+                $([[ $format == xfs || $format == btrfs || $format == reiserfs ]] && echo "-f") \
+                $([[ $format == vfat || $format == fat ]] && echo "-F32") \
+                $([[ $(bool $TRIM) && $format == ext4 ]] && echo "-E discard")
+        fi
+
+        fsck -p $partition
+        if [[ "$mountpoint" != "" ]]; then
+            mkdir -p $mountpoint
+            mount $([[ "$format" != "" ]] && printf -- '-t %s' $format) $partition $mountpoint
+        fi
+    }
+
+    # root
+    local partition=$(device_path $(printf '%s' "$ROOT_PARTITION" | awk '{print $1}'))
+    local format=$(printf '%s' "$ROOT_PARTITION" | awk '{print $2}')
+    format_mount_partition "$partition" "$ROOT_MOUNTPOINT" "$format"
+    ! bool $UEFI && BOOT_DISK=$(echo $partition | sed 's/[0-9]//')
+
+    # swap
+    for partition in "${SWAP_PARTITIONS[@]}"; do
+        partition="/dev/$partition"
+        mkswap "$partition"
+        swapon "$partition"
+    done
+
+    local file
+    local size
+    for file in "${SWAP_FILES[@]}"; do
+        size=$(printf '%s' "$file" | awk '{print $2}')
+        file=$(printf '%s' "$ROOT_PARTITION$file" | awk '{print $1}')
+        if [[ "$size" == "" ]]; then
+            size=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+        fi
+
+        # https://wiki.archlinux.org/index.php/Swap#Manually
+        dd if=/dev/zero of="$file" bs=1K count=$size status=progress
+        chmod 600 "$file"
+        mkswap "$file"
+        swapon "$file"
+    done
+
+    # efi
+    if bool $UEFI; then
+        partition=$(device_path $(printf '%s' "$EFI_PARTITION" | awk '{print $1}'))
+        format="vfat"
+        [[ "$partition" == "/dev/mapper/"* ]] && critical_error "EFI partition should not be on LVM"
+
+        format_mount_partition "$partition" "${ROOT_MOUNTPOINT}${EFI_MOUNTPOINT}" "$format"
+        BOOTLOADER_AUTOMATIC_INSTALL=$True
+    fi
+
+    # other partitions
+    local mountpoint
+    for partition in "${OTHER_PARTITIONS[@]}"; do
+        format=$(printf '%s' "$partition" | awk '{print $3}')
+        mountpoint=$(printf '%s' "$partition" | awk '{print $2}')
+        partition=$(device_path $(printf '%s' "$partition" | awk '{print $1}'))
+
+        format_mount_partition "$partition" "${ROOT_MOUNTPOINT}${mountpoint}" "$format"
+        if ! bool $UEFI && [[ "$mountpoint" == "/boot" || "$mountpoint" == "/boot/"* ]]; then
+            BOOT_DISK=$(echo $partition | sed 's/[0-9]//')
+        fi
+    done
+}
+
+format_partitions

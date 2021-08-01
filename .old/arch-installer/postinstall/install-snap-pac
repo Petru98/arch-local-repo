@@ -1,0 +1,2 @@
+print_title "snap-pac - https://wiki.archlinux.org/index.php/Snapper#Wrapping_pacman_transactions_in_snapshots"
+package_install snap-pac

@@ -1,0 +1,37 @@
+#!/bin/bash
+# shellcheck disable=SC1090
+. "$1"
+result='{'
+
+addvar() {
+    for k in "$@" ; do eval '
+        if [ -n "${'"$k"'+x}" ]; then
+            result="$result\"'"$k"'\":\"${'"$k"'//\"/\\\"}\","
+        fi'
+    done
+}
+addarr() {
+    for k in "$@" ; do eval '
+        if [ -n "${'"$k"'+x}" ]; then
+            v=""
+            for x in "${'"$k"'[@]}" ; do
+                v="$v\"${x//\"/\\\"}\","
+            done
+            result="$result\"'"$k"'\":[${v%,}],"
+        fi'
+    done
+}
+
+addvar CARCH CHOST CPPFLAGS CFLAGS CXXFLAGS LDFLAGS RUSTFLAGS \
+       MAKEFLAGS DEBUG_CFLAGS DEBUG_CXXFLAGS DEBUG_RUSTFLAGS \
+       DISTCC_HOSTS BUILDDIR STRIP_BINARIES STRIP_SHARED STRIP_STATIC \
+       DBGSRCDIR PKGDEST SRCDEST SRCPKGDEST LOGDEST PACKAGER GPGKEY \
+       PKGEXT SRCEXT
+
+addarr DLAGENTS VCSCLIENTS BUILDENV OPTIONS INTEGRITY_CHECK \
+       MAN_DIRS DOC_DIRS PURGE_TARGETS COMPRESSGZ COMPRESSBZ2 \
+       COMPRESSXZ COMPRESSZST COMPRESSLRZ COMPRESSLZO COMPRESSZ \
+       COMPRESSLZ4 COMPRESSLZ
+
+result="${result%,}}"
+printf '%s' "$result"

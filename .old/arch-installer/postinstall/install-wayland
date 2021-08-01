@@ -1,0 +1,2 @@
+print_title "Wayland - https://wiki.archlinux.org/index.php/Wayland"
+package_install weston xorg-server-xwayland

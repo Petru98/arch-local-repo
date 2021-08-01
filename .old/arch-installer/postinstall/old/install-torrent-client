@@ -1,0 +1,4 @@
+print_title "Transmission - https://wiki.archlinux.org/index.php/Transmission"
+print_info "Installing transmission."
+package_install --asdeps transmission-cli
+package_install $(bool $KDE && echo -n transmission-qt || echo -n transmission-gtk)

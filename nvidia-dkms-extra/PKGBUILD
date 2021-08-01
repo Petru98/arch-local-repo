@@ -1,0 +1,14 @@
+pkgname=nvidia-dkms-extra
+pkgver=1
+pkgrel=1
+pkgdesc='Extra files for nvidia-dkms'
+arch=(any)
+license=(Unlicense)
+
+source=("nvidia-dkms.hook")
+b2sums=('ac951f18c2b7844be7518cffc59326c38204e481784535c7a54af2eb6739e51ddd330b408aba0df23d25d85e1dae54a9414c68f81de74492e039b247240e407e')
+
+
+package() {
+    install -Dm644 "${srcdir}/nvidia-dkms.hook" "${pkgdir}/usr/share/libalpm/hooks/nvidia-dkms.hook"
+}

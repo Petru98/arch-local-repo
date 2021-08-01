@@ -1,0 +1,3 @@
+print_title "Git - https://wiki.archlinux.org/index.php/Git"
+print_info "Installing git."
+package_install git

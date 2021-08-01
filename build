@@ -1,0 +1,198 @@
+#!/usr/bin/python
+import asyncio
+import logging
+import os
+import sys
+
+from itertools import chain
+from pyalpm import vercmp
+from pycman.config import PacmanConfig
+from cfg import (
+    CARCH_DEFAULT, SRCDEST_DEFAULT, PKGEXT_DEFAULT, SRCEXT_DEFAULT, SRCPKGDEST_DEFAULT, BUILDDIR_DEFAULT,
+    rootdir, env, tmpdir, log,
+    Srcinfo, isvcs,
+    run, run_async,
+    read_srcinfo_async, read_makepkgconf_async,
+    iterpkgs, iterdbpkgs,
+    envconf_get, envconf_setdefault
+)
+
+
+makepkgconf = None
+
+
+class Package(object):
+    __slots__ = ('srcinfo', 'db')
+    def __init__(self, srcinfo):
+        self.srcinfo = srcinfo
+        self.db = None
+
+class Provided(object):
+    __slots__ = ('srcinfos', 'versions')
+    def __init__(self):
+        self.srcinfos = []
+        self.versions = []
+
+
+
+def loadinfo(pkgs):
+    semaphore = asyncio.Semaphore(os.cpu_count())
+
+    async def getsrcinfo_async(pkgbase):
+        async with semaphore:
+            tasks = []
+            if isvcs(pkgbase):  # TODO move this to fix or outdated?
+                # update pkgver in PKGBUILD
+                await run_async(['makepkg', '--nodeps', '--skipinteg', '--noprepare', '--nobuild'],
+                    cwd=f'{rootdir}/{pkgbase}', stdout=asyncio.subprocess.DEVNULL
+                )
+                # remove leftover files in background
+                tasks.append(asyncio.create_task(run_async(['rm', '-rf', f'{env["BUILDDIR"]}/{pkgbase}'])))
+
+            srcinfo = Srcinfo.parsestr(await read_srcinfo_async(pkgbase, cache=True))
+            if tasks: asyncio.wait(tasks)
+        return srcinfo
+
+    async def loadinfo_async(pkgs):
+        pkginfos = {}
+        makepkgconf = None
+        oldbuilddir, env['BUILDDIR'] = env.get('BUILDDIR'), f'{tmpdir}/makepkg'
+
+        for coro in asyncio.as_completed(chain([read_makepkgconf_async()], map(getsrcinfo_async, pkgs))):
+            info = await coro
+            if 'packages' in info:
+                for pkgname in info['packages']:
+                    pkginfos[pkgname] = Package(info)
+            else:
+                makepkgconf = info
+
+        if oldbuilddir is None: del env['BUILDDIR']
+        else: env['BUILDDIR'] = oldbuilddir
+        return makepkgconf, pkginfos
+
+    return asyncio.run(loadinfo_async(pkgs))
+
+
+def pkgsextrainfo(pkgs):
+    srcinfos = {}
+    prvds = {}
+    for pkgname, pkg in pkgs.items():
+        info = pkg.srcinfo
+        if info['pkgbase'] not in srcinfos:
+            srcinfos[info['pkgbase']] = info
+
+        for pvd in chain(*filter(None, map(lambda k: info['packages'][pkgname].get(k), ['provides', 'provides_'+envconf_get(makepkgconf, 'CARCH')]))):
+            pvd, _, version = pvd.partition('=')
+            pvd = prvds.setdefault(pvd, Provided())
+            pvd.srcinfos.append(info)
+            pvd.versions.append(version or info['pkgver'])
+    return srcinfos, prvds
+
+def makedepsort(pkgs, srcinfos=None, prvds=None):
+    if not all((srcinfos, prvds)):
+        srcinfos, prvds = pkgsextrainfo(pkgs)
+    ops = ('<=', '>=', '<', '=', '>')
+    visited = {pkgbase: False for pkgbase in srcinfos.keys()}
+
+    def visit(pkgbase):
+        visited[pkgbase] = True
+        info = srcinfos[pkgbase]
+
+        # don't implement it for subpackages (see https://man.archlinux.org/man/PKGBUILD.5#PACKAGE_SPLITTING)
+        for pkg in chain(*(info[k] for k in ['depends', 'makedepends', 'checkdepends'] if k in info)):
+            deppkgname, op, reqversion = next(filter(lambda x: x[1], (pkg.partition(op) for op in ops)), (pkg, '', ''))
+            if deppkgname in pkgs:
+                depsrcinfos = [pkgs[deppkgname].srcinfo]
+                versions = [depsrcinfos[0]['pkgver']]
+            elif deppkgname in prvds:
+                depsrcinfos = prvds[deppkgname].srcinfos
+                versions = prvds[deppkgname].versions
+            else:
+                continue
+
+            if reqversion:
+                s, v = depsrcinfos, versions
+                depsrcinfos, versions = [], []
+                for depsrcinfo, version, cmp in ((s, v, vercmp(v, reqversion)) for s,v in zip(s,v)):
+                    if (cmp < 0 and '<' in op) or (cmp == 0 and '=' in op) or (cmp > 0 and '>' in op):
+                        depsrcinfos.append(depsrcinfo)
+                        versions.append(version)
+
+            for depsrcinfo in depsrcinfos:
+                deppkgbase = depsrcinfo['pkgbase']
+                if not visited[deppkgbase]:
+                    yield from visit(deppkgbase)
+
+        yield info
+
+    for pkgbase in srcinfos.keys():
+        if not visited[pkgbase]:
+            yield from visit(pkgbase)
+
+
+def getpkgarchives(srcinfo):
+    pkgdest = envconf_get(makepkgconf, 'PKGDEST')
+    pkgext = envconf_get(makepkgconf, 'PKGEXT')
+    carch = envconf_get(makepkgconf, 'CARCH')
+    version = Srcinfo.version(srcinfo)
+    for pkgname, pkginfo in srcinfo['packages'].items():
+        arch = 'any' if 'any' in pkginfo.get('arch', srcinfo.get('arch')) else carch
+        yield pkgname, f'{pkgdest}/{pkgname}-{version}-{arch}{pkgext}'
+
+
+
+def build(pkgs, devel=None):
+    global makepkgconf
+    makepkgconf, pkgs = loadinfo(iterpkgs(pkgs, devel=devel))
+    localdbs = [os.path.realpath(f'{d[7:]}/{r}.db') for r,s in PacmanConfig('/etc/pacman.conf').repos.items() for d in s if d.startswith('file://')]
+
+    envconf_setdefault(makepkgconf, 'CARCH'     , CARCH_DEFAULT)
+    envconf_setdefault(makepkgconf, 'SRCDEST'   , SRCDEST_DEFAULT)
+    envconf_setdefault(makepkgconf, 'PKGEXT'    , PKGEXT_DEFAULT)
+    envconf_setdefault(makepkgconf, 'SRCEXT'    , SRCEXT_DEFAULT)
+    envconf_setdefault(makepkgconf, 'SRCPKGDEST', SRCPKGDEST_DEFAULT)
+    envconf_setdefault(makepkgconf, 'PKGDEST'   , os.path.dirname(localdbs[0]))
+    envconf_setdefault(makepkgconf, 'BUILDDIR'  , BUILDDIR_DEFAULT)
+
+    # Filter based on newer version
+    for db in localdbs:
+        for pkgname, version in iterdbpkgs(db):
+            if pkgname in pkgs:
+                if vercmp(version, Srcinfo.version(pkgs[pkgname].srcinfo)) < 0:
+                    pkgs[pkgname].db = db
+                else:
+                    log.info(f'Skipping {pkgname}: up-to-date')
+                    del pkgs[pkgname]
+
+    # Build
+    for info in makedepsort(pkgs):  # TODO allow .makepkg.conf specific for each package (export an env var with the path for the default makepkg.conf in order to be sourced, maybe in ./aur bash script). also add runmakepkg[_async] function and a script which takes care of the makepkg.conf
+        run(['makepkg', '-srcf'], cwd=f'{rootdir}/{info["pkgbase"]}')
+
+        dbs = {}
+        for pkgname, archive in getpkgarchives(info):
+            db = pkgs[pkgname].db or localdbs[0]
+            dbs.setdefault(db,[]).append(archive)
+
+        # .sig files are already in PKGDEST and are automatically detected
+        for db, archives in dbs.items():
+            run(['repo-add', '-R', db, *archives])
+        print('='*80, end='\n\n')
+
+
+
+def main(args=sys.argv[1:]):
+    import argparse
+    argparser = argparse.ArgumentParser(description='', allow_abbrev=False)
+    argparser.add_argument('--verbose', '-v', action='store_true', help='Show more info.')
+    argparser.add_argument('pkgs', metavar='PKGS', nargs='*', help='Packages to build.')
+    argparser.add_argument('--devel', action=argparse.BooleanOptionalAction, help='By default, VCS packages are included if PKGS is given, they are excluded otherwise. This overwrites the behaviour.')
+
+    args = argparser.parse_args(args)
+    if args.verbose:
+        log.setLevel(logging.INFO)
+
+    return build(args.pkgs, args.devel)
+
+
+if __name__ == '__main__':
+    exit(main())
