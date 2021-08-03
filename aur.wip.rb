@@ -38,38 +38,70 @@ end
 
 
 class Srcinfo < Hash
-    @@checksum_algos = %w[md5 sha1 sha224 sha256 sha384 sha512 b2]
+    @checksum_algos = %w[md5 sha1 sha224 sha256 sha384 sha512 b2]
 
 
-    @@_array_keys_pattern = %r{^
-        pkgname|arch|groups|license|noextract|options|backup|validpgpkeys|
-        depends|makedepends|checkdepends|optdepends|
-        source(_.+)?|conflicts(_.+)?|provides(_.+)?|replaces(_.+)?|
-        #{@@checksum_algos.map{|x| "#{x}sums"}.join('|')}
-    $}x
-    def self.array?(key)
-        return key =~ @@_array_keys_pattern
-    end
+    class << self
+        attr_accessor :checksum_algos
 
-    @@_overriddable_keys = %r{^
-        pkgdesc|url|install|changelog|
-        arch|groups|license|noextract|options|backup|
-        depends(_.+)?|optdepends(_.+)?|
-        conflicts(_.+)?|provides(_.+)?|replaces(_.+)?
-    $}x
-    def self.canbeoverriden(key)
-        return key =~ @@_overriddable_keys
-    end
+        @@_array_keys_pattern = %r{^
+            pkgname|arch|groups|license|noextract|options|backup|validpgpkeys|
+            depends|makedepends|checkdepends|optdepends|
+            source(_.+)?|conflicts(_.+)?|provides(_.+)?|replaces(_.+)?|
+            #{Srcinfo.checksum_algos.map{|x| "#{x}sums"}.join('|')}
+        $}x
+        def array?(key)
+            return key =~ @@_array_keys_pattern
+        end
+
+        @@_overriddable_keys = %r{^
+            pkgdesc|url|install|changelog|
+            arch|groups|license|noextract|options|backup|
+            depends(_.+)?|optdepends(_.+)?|
+            conflicts(_.+)?|provides(_.+)?|replaces(_.+)?
+        $}x
+        def canbeoverriden(key)
+            return key =~ @@_overriddable_keys
+        end
 
 
-    def self.splitsource(source)
-        # TODO: implement
+        def splitsource(source)
+            filename, _, url = source.rpartition('::')
+
+            i = url.index('://')
+            if i.nil?
+                protocol = 'local'
+            else
+                j = url[0,i].index('+')
+                if j.nil?
+                    protocol = url[0,i]
+                else
+                    protocol = url[0,j]
+                    url = url[j+1...url.length]
+                end
+            end
+
+            if filename.empty?
+                if protocol == 'local'
+                    filename = url.dup
+                    while filename.chomp!('/') ; end
+                    filename = filename.rpartition('/')[2]
+                else
+                    filename = url.partition('#')[0].partition('?')[0]
+                    while filename.chomp!('/') ; end
+                    filename = filename.rpartition('/')[2]
+                    filename.delete_suffix!('.git') if protocol == 'git'
+                end
+            end
+
+            return filename, protocol, url
+        end
     end
 
 
     def archsuffixes
         r = ['']
-        r.concat(self['arch']) if self['arch'][0] != 'any'
+        r.concat(self['arch'].map {|x| "_#{x}"}) if self['arch'][0] != 'any'
         return r
     end
 
@@ -129,12 +161,12 @@ class Srcinfo < Hash
         raise 'arch not specified' if !self.key?('arch')
         raise 'package cannot be arch-specific and arch-independent simultaneously' if self['arch'].length >= 2 && self['arch'].include?('any')
         self.archsuffixes.each do |suffix|
-            sources = "source_#{suffix}"
+            sources = "source#{suffix}"
             next unless self.key?(sources)
-            @@checksum_algos.each do |algo|
+            Srcinfo.checksum_algos.each do |algo|
                 checksums = "#{algo}sums#{suffix}"
                 next unless self.key?(checksums)
-                raise "#{sources} and #{checksums} have different lengths" if info[sources].length != info[checksums].length
+                raise "#{sources} and #{checksums} have different lengths" if self[sources].length != self[checksums].length
             end
         end
 
@@ -350,6 +382,12 @@ class Build
                     system('rm', '-rf', "#{ENV['BUILDDIR']}/#{pkgbase}")
                 end
                 Srcinfo.new.parsestr(Aur.read_srcinfo(pkgbase, cache: true))
+
+            rescue RuntimeError => e
+                Aur.log.error(e.message)
+            rescue StandardError => e
+                $stderr.puts(e.message)
+                $stderr.puts(e.backtrace.inspect)
             end
         end
 
@@ -372,7 +410,9 @@ class Build
             end
         end
 
+    ensure
         threadpool.shutdown
+        threadpool.wait_for_termination
     end
 
 
@@ -414,7 +454,7 @@ class Build
                     end
 
                     if reqversion != ''
-                        depsrcinfos, versions = depsrcinfos.zip(versions).select do |_s,v|
+                        depsrcinfos, _versions = depsrcinfos.zip(versions).select do |_s,v|
                             cmp = vercmp(v, reqversion)
                             (cmp < 0 && op[0] == '<') || (cmp == 0 && op[0] == '=') || (cmp > 0 && op[0] == '>')
                         end.transpose
@@ -475,6 +515,90 @@ end
 
 
 
+class Fix
+    def initialize(pkgs)
+        empty_pkgs = pkgs.nil? || pkgs.empty?
+        pkgs = Aur.iterpkgs(pkgs, devel: true)
+        pkgs = pkgs.filter {|pkgbase| Aur.srcinfo_outdated?(pkgbase)} if empty_pkgs
+        @pkgs = pkgs.to_a
+    end
+
+
+    def fixchecksums(srcinfo)
+        hashvalues = [].to_set
+        oldchecksums = []
+        replacements = {}
+
+        srcinfo.archsuffixes.each do |suffix|
+            sources = "source#{suffix}"
+            next unless srcinfo.key?(sources)
+
+            Srcinfo.checksum_algos.each do |algo|
+                checksums = "#{algo}sums#{suffix}"
+                next unless srcinfo.key?(checksums)
+
+                srcinfo[sources].zip(srcinfo[checksums]) do |source, checksum|
+                    next if checksum.casecmp?('skip')
+                    # XXX Unlikely. This requires more complex logic when editing the PKGBUILD file. Returning an error should be good enough for now
+                    raise "#{srcinfo['pkgbase']}/PKGBUILD contains multiple checksums equal to #{checksum}" if hashvalues.add?(checksum.downcase).nil?
+
+                    _filename, protocol, url = Srcinfo.splitsource(source)
+                    if protocol != 'local'
+                        status = IO.popen(['curl', '-Ls', '-o', '/dev/null', '-I', '-w', '%{http_code}', url], &:read)
+                        raise "could not do a HEAD request for #{url}" unless $?.success?
+                        raise "got status #{status} for #{url}" if status.to_i >= 300
+                        catcmd = "curl -Ls '#{url.sub("'", '%27')}'"
+                    else
+                        catcmd = "cat '#{rootdir}/#{srcinfo['pkgbase']}/#{url}'"
+                    end
+                    newchecksum = `#{catcmd} | #{algo}sum -b`
+                    raise "could not download #{url} or compute it's checksum" unless $?.success?
+
+                    newchecksum = newchecksum[0,newchecksum.index(' ')].downcase
+                    next if newchecksum.casecmp?(checksum)
+                    oldchecksums.append(checksum)
+                    replacements[checksum] = newchecksum
+                end
+            end
+        end
+
+        unless replacements.empty?
+            oldchecksums.sort!.reverse!
+            File.open("#{Aur.rootdir}/#{srcinfo['pkgbase']}/PKGBUILD", 'r+') do |fd|
+                contents = fd.read
+                contents.gsub!(/#{oldchecksums.join('|')}/) {|m| replacements[m]}
+                fd.seek(0)
+                fd.truncate(0)
+                fd.write(contents)
+            end
+        end
+    end
+
+
+    def call
+        threadpool = Concurrent::ThreadPoolExecutor.new(min_threads: 0, max_threads: Concurrent.processor_count)
+        @pkgs.each do |pkgbase|
+            threadpool.post(pkgbase) do |pkgbase|
+                srcinfo = Srcinfo.new.parsestr(Aur.read_srcinfo(pkgbase, cache: true))
+                self.fixchecksums(srcinfo)
+                Aur.update_srcinfo(pkgbase) if Aur.srcinfo_outdated?(pkgbase)
+
+            rescue RuntimeError => e
+                Aur.log.error(e.message)
+            rescue StandardError => e
+                $stderr.puts(e.message)
+                $stderr.puts(e.backtrace.inspect)
+            end
+        end
+
+    ensure
+        threadpool.shutdown
+        threadpool.wait_for_termination
+    end
+end
+
+
+
 if __FILE__ == $0
     options = {}
 
@@ -498,12 +622,18 @@ See '#{$0} COMMAND --help' for more information on a specific command.
     subcommands = {
         'build' => {
             :parser => OptionParser.new do |opts|
-                opts.banner = "Usage: #{$0} build [options]"
+                opts.banner = "Usage: #{$0} build [options] [PKGS]"
                 opts.on('--[no-]devel', 'By default, VCS packages are included if PKGS is given, they are excluded otherwise. This overwrites the behaviour.') do |d|
                     options[:devel] = d
                 end
             end,
             :call => ->{Build.new(ARGV, **options).call}
+        },
+        'fix' => {
+            :parser => OptionParser.new do |opts|
+                opts.banner = "Usage: #{$0} fix [options] [PKGS]"
+            end,
+            :call => ->{Fix.new(ARGV, **options).call}
         }
     }
 
@@ -512,9 +642,14 @@ See '#{$0} COMMAND --help' for more information on a specific command.
     command = ARGV.shift
 
     if command
-        subcommands[command][:parser].order!
-        subcommands[command][:call].call
-
+        if subcommands.key?(command)
+            subcommands[command][:parser].order!
+            subcommands[command][:call].call
+        else
+            puts("error: invalid command #{command}")
+            puts(global.help)
+            puts
+        end
     else
         puts(global.help)
         puts
