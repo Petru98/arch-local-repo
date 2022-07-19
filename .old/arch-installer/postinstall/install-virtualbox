@@ -1,6 +1,0 @@
-print_title "Virtualbox - https://wiki.archlinux.org/index.php/VirtualBox"
-print_info "Installing dependencies."
-package_install --asdeps virtualbox-guest-iso $([[ $LINUX_VERSION == "linux" ]] && echo -n virtualbox-host-modules-arch || echo -n virtualbox-host-dkms)
-aur_package_install virtualbox-ext-oracle
-print_info "Installing virtualbox."
-package_install virtualbox

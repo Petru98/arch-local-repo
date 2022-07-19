@@ -1,4 +1,0 @@
-print_title "Docker - https://wiki.archlinux.org/index.php/Docker"
-print_info "Installing docker."
-package_install docker
-add_user_to_group $USERNAME docker

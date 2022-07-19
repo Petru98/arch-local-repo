@@ -1,4 +1,0 @@
-print_title "Snapper - https://wiki.archlinux.org/index.php/Snapper"
-package_install snapper
-systemctl enable snapper-cleanup.timer
-print_warning "Snapper can be used only with BTRFS and LVM. You must manually configure snapper using 'snapper create-config <SUBVOLUME_DIRECTORY>'."

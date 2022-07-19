@@ -1,3 +1,0 @@
-print_title "Hex editor"
-print_info "Installing ghex."
-package_install ghex

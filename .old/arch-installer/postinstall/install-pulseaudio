@@ -1,2 +1,0 @@
-print_title "Pulseaudio - https://wiki.archlinux.org/index.php/Pulseaudio"
-package_install pulseaudio pulseaudio-alsa lib32-libpulse

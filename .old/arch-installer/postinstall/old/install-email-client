@@ -1,3 +1,0 @@
-print_title "Email client - https://wiki.archlinux.org/index.php/Category:Email_clients"
-print_info "Installing evolution."
-package_install evolution

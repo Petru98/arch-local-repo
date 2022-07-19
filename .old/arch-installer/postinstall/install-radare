@@ -1,3 +1,0 @@
-print_title "Radare"
-print_info "Installing radare2-cutter."
-package_install radare2-cutter

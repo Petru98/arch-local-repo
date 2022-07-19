@@ -1,5 +1,0 @@
-print_info "Configuring hostname"
-echo "$HOSTNAME" > $ROOT_MOUNTPOINT/etc/hostname
-echo "127.0.0.1 localhost $HOSTNAME" >> $ROOT_MOUNTPOINT/etc/hosts
-echo "::1       localhost $HOSTNAME" >> $ROOT_MOUNTPOINT/etc/hosts
-print_info "Hostname set to $HOSTNAME."

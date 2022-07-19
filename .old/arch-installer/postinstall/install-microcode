@@ -1,8 +1,0 @@
-print_title "Microcode - https://wiki.archlinux.org/index.php/Microcode"
-package_install amd-ucode intel-ucode
-if [[ "$BOOTLOADER" == "Grub2" ]] ; then
-    grub-mkconfig -o /boot/grub/grub.cfg
-else
-    print_warning "Could not enable microcode updates. You must do it manually."
-    pause
-fi

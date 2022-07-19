@@ -1,4 +1,0 @@
-print_title "Youtube-dl - https://wiki.archlinux.org/index.php/Youtube-dl"
-print_info "Installing youtube-dl-gui."
-aur_package_install youtube-dl-gui-git
-package_install --asdeps youtube-dl python-pycryptodome

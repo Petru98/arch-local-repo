@@ -1,4 +1,0 @@
-#!/bin/sh
-. ../version.sh
-github_tags 'AladW/aurutils'
-aur_version 'aurutils'

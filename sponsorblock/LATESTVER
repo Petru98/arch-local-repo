@@ -1,3 +1,0 @@
-#!/bin/sh
-. ../version.sh
-github_tags 'ajayyy/SponsorBlock'

@@ -1,3 +1,0 @@
-print_title "Xorg - https://wiki.archlinux.org/index.php/Xorg"
-package_install xorg-server xorg-apps xorg-xinit xorg-xkill xorg-xinput xf86-input-libinput mesa
-modprobe uinput

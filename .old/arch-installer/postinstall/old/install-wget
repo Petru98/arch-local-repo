@@ -1,3 +1,0 @@
-print_title "Wget - https://wiki.archlinux.org/index.php/Wget"
-print_info "Installing wget."
-package_install wget

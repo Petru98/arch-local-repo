@@ -1,3 +1,0 @@
-print_title "Java - https://wiki.archlinux.org/index.php/Java"
-print_info "Installing openjdk 11."
-package_install jdk11-openjdk

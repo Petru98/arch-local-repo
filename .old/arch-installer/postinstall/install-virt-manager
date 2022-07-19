@@ -1,2 +1,0 @@
-package_install virt-manager edk2-ovmf qemu-guest-agent spice-vdagent
-package_install --asdeps qemu ebtables dnsmasq qemu-arch-extra libvirt-storage-gluster libvirt-storage-iscsi-direct libvirt-storage-rbd qemu-block-gluster qemu-block-iscsi qemu-block-rbd

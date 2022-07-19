@@ -1,3 +1,0 @@
-print_title "IRC client - https://wiki.archlinux.org/index.php/IRC_client"
-print_info "Installing hexchat."
-package_install hexchat

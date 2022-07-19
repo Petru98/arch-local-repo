@@ -1,4 +1,0 @@
-#!/bin/sh
-. ../version.sh
-gitlab_tags 'https://gitlab.com/librewolf-community/browser/linux'
-aur_version librewolf-bin librewolf

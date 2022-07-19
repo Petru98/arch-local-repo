@@ -1,4 +1,0 @@
-print_title "Bluetooth - https://wiki.archlinux.org/index.php/Bluetooth"
-package_install bluez bluez-utils
-systemctl enable bluetooth.service
-systemctl restart bluetooth.service

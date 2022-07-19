@@ -1,4 +1,0 @@
-print_title "Tor - https://wiki.archlinux.org/index.php/Tor"
-print_info "Installing torbrowser-launcher, tor and torsocks."
-package_install torbrowser-launcher
-package_install --asdeps torsocks

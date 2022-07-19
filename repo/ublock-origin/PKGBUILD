@@ -1,0 +1,30 @@
+pkgbase=ublock-origin
+pkgname=(librewolf-$pkgbase chromium-$pkgbase)
+pkgver=1.43.0
+pkgrel=1
+pkgdesc='Efficient blocker add-on for various browsers. Fast, potent, and lean'
+arch=(any)
+url='https://github.com/gorhill/uBlock'
+license=(GPL3)
+makedepends=(unzip)
+source=(
+    "uBlock0_$pkgver.firefox.xpi::https://github.com/gorhill/uBlock/releases/download/$pkgver/uBlock0_$pkgver.firefox.signed.xpi"
+    "uBlock0_$pkgver.chromium.zip::https://github.com/gorhill/uBlock/releases/download/$pkgver/uBlock0_$pkgver.chromium.zip"
+)
+sha512sums=(
+    16b58cd77d661fe0001fcbaa5af5624b490f0336f3e23a57c0b5a6573d0549edb9a3fe984818c8a4d1264c4fca6e9f45f27c9f64d65dfb86ac78cffffed12d37
+    32871442d1b1fe60abcd496551d2c3d6ab571dfe6ffc2cdf69a6319989463c4b59c6a3f90a37ab880a9dbd502797acd6d14500dba81a360280a395cc1e679323
+)
+noextract=("uBlock0_$pkgver.firefox.xpi" "uBlock0_$pkgver.chromium.zip")
+
+package_librewolf-ublock-origin() {
+    groups=(librewolf-addons)
+    install -Dm644 "uBlock0_$pkgver.firefox.xpi" "$pkgdir/usr/lib/librewolf/browser/extensions/uBlock0@raymondhill.net.xpi"
+}
+
+package_chromium-ublock-origin() {
+    groups=(chromium-addons)
+    install -dm755 "$pkgdir/usr/share/"
+    unzip "uBlock0_$pkgver.chromium.zip" -d "$pkgdir/usr/share/"
+    mv -T "$pkgdir/usr/share/uBlock0.chromium" "$pkgdir/usr/$pkgbase"
+}

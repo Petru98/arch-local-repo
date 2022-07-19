@@ -1,2 +1,0 @@
-print_info "Installing compression tools."
-package_install zip unzip unrar p7zip zstd lzop cpio

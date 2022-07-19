@@ -1,0 +1,28 @@
+pkgname=nvidia-fake-powerd
+pkgver=1
+pkgrel=1
+pkgdesc='Fix for nvidia bug that spams dbus'
+arch=(any)
+url='https://forums.developer.nvidia.com/t/bug-nvidia-v495-29-05-driver-spamming-dbus-enabled-applications-with-invalid-messages/192892'
+license=(Unlicense)
+
+depends=(dbus systemd)
+install=nvidia-fake-powerd.install
+
+source=(
+    "nvidia-fake-powerd.install"
+    "nvidia-fake-powerd.conf"
+    "nvidia-fake-powerd.service"
+)
+b2sums=(
+    c728f2c08ae64f2060461fe449cde8f81664b6ff844995f7ea7feb16a5b022062cc8363f19e5b7624159f97e8509e4957116bed4d9ddca65adc1f5b5a54ec60a
+    17c430a5177510f32aadae7df26c3ded9ecb671206fd2a841e343cc52748839d8c89d967ed3c2899b80b07824837d9aff23082c0f8d927f3a826b06a703f4eaf
+    96da85dc12a0fac0cbe0d666c41c1abe5ccda0b1e8a1432f14eb829580a9dabbd51f1f0e4e4630222e8362998020993489cd72b26eb18df2a2aefbfec1571346
+)
+
+
+package() {
+    install -Dm644 "${srcdir}/nvidia-fake-powerd.conf" "${pkgdir}/usr/share/dbus-1/system.d/nvidia-fake-powerd.conf"
+    install -Dm644 "${srcdir}/nvidia-fake-powerd.service" "${pkgdir}/usr/lib/systemd/system/nvidia-fake-powerd.service"
+}
+

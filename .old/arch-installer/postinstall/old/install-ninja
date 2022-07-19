@@ -1,3 +1,0 @@
-print_title "Ninja"
-print_info "Installing ninja."
-package_install ninja

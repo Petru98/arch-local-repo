@@ -1,7 +1,0 @@
-print_title "Imagescan - https://wiki.archlinux.org/index.php/SANE/Scanner-specific_problems#Epson"
-print_info "Installing imagescan-plugin-networkscan."
-aur_package_install imagescan-plugin-networkscan
-
-print_warning "You need to configure imagescan by appending your Epson scanner configuration to /etc/utsushi/utsushi.conf"
-print_info "Template:"
-printf "[devices]\n%s\n%s\n%s\n\n" "myscanner.udi    = esci:networkscan://192.168.100.24:1865" "myscanner.vendor = Epson" "myscanner.model  = L3160"

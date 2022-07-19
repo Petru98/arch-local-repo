@@ -1,2 +1,0 @@
-print_title "Valgrind - https://wiki.archlinux.org/index.php/Debugging#Valgrind"
-package_install valgrind $(bool $KDE && echo -n kcachegrind || echo -n qcachegrind)

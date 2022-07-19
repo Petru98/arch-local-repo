@@ -1,0 +1,3 @@
+#!/bin/sh
+. ./lib/version.sh
+github_tags 'clsync/clsync'

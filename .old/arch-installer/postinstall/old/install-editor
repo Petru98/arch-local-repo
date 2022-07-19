@@ -1,2 +1,0 @@
-print_info "Installing $EDITOR."
-package_install $EDITOR

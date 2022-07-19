@@ -1,6 +1,0 @@
-print_title "Pacman contrib"
-package_install pacman-contrib
-systemctl enable paccache.timer
-
-print_title "Namcap - https://wiki.archlinux.org/index.php/Namcap"
-package_install namcap

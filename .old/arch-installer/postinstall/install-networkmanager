@@ -1,7 +1,0 @@
-print_title "NetworkManager - https://wiki.archlinux.org/index.php/Networkmanager"
-package_install networkmanager networkmanager-openconnect networkmanager-openvpn networkmanager-pptp networkmanager-vpnc
-package_install --asdeps dnsmasq
-
-# echo -e "[main]\ndns=dnsmasq" > /etc/NetworkManager/conf.d/dns.conf
-# echo -e "[main]\ndhcp=dhclient" > /etc/NetworkManager/conf.d/dhcp-client.conf
-systemctl enable NetworkManager.service

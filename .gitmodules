@@ -1,0 +1,6 @@
+[submodule "src/aur/ada-util"]
+	path = src/aur/ada-util
+	url = https://github.com/stcarrez/ada-util
+[submodule "src/aur/ada-toml"]
+	path = src/aur/ada-toml
+	url = https://github.com/pmderodat/ada-toml

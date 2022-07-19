@@ -1,3 +1,0 @@
-print_title "Restic"
-print_info "Installing restic."
-package_install restic

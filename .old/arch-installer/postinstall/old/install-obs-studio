@@ -1,3 +1,0 @@
-print_title "OBS Studio"
-print_info "Installing obs-studio."
-package_install obs-studio

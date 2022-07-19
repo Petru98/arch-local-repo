@@ -1,3 +1,0 @@
-print_title "Cmake"
-print_info "Installing cmake."
-package_install cmake

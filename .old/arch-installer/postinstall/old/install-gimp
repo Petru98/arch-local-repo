@@ -1,3 +1,0 @@
-print_title "GIMP - https://wiki.archlinux.org/index.php/GIMP"
-print_info "Installing gimp."
-package_install gimp

@@ -1,0 +1,19 @@
+post_install() {
+    systemctl daemon-reload
+    systemctl reload dbus
+    systemctl enable --now nvidia-fake-powerd.service
+}
+
+post_upgrade() {
+    systemctl daemon-reload
+    systemctl reload dbus
+}
+
+pre_remove() {
+    systemctl disable --now nvidia-fake-powerd.service
+}
+
+post_remove() {
+    systemctl daemon-reload
+    systemctl reload dbus
+}
